@@ -5,15 +5,15 @@ body {
     background-color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     user-select: none;
+    touch-action: none; /* Prevents scrolling while dragging pizzas */
 }
 
-/* The physics canvas sits behind the UI */
 canvas {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 5;
-    pointer-events: none;
+    /* Removed pointer-events: none so we can touch the pizzas */
 }
 
 .ui-layer {
@@ -26,14 +26,59 @@ canvas {
     padding-top: 10vh;
     min-height: 100vh;
     text-align: center;
+    pointer-events: none; /* Let clicks pass through to the canvas */
+}
+
+.main-heading, .sub-heading, .btn {
+    pointer-events: auto; /* Re-enable clicks for the actual buttons */
 }
 
 .main-heading {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: bold;
     color: #1f2937;
     margin-bottom: 0.5rem;
     padding: 0 1rem;
+}
+
+.sub-heading {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 2rem;
+}
+
+.btn {
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-summon {
+    background-color: #ff9800;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    display: none;
+}
+
 }
 
 .sub-heading {

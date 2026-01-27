@@ -1,5 +1,6 @@
 // 1. Audio Setup
 const pizzaSound = new Audio('pizza.mp3');
+const burgerSound = new Audio('chezburger.mp3');
 
 // 2. Matter.js Setup
 const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse } = Matter;
@@ -28,7 +29,7 @@ let leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHei
 let rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
 Composite.add(world, [ground, leftWall, rightWall]);
 
-// 4. Mouse Control (Making things touchable)
+// 4. Mouse Control (Touch/Drag)
 const mouse = Mouse.create(render.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
@@ -37,45 +38,52 @@ const mouseConstraint = MouseConstraint.create(engine, {
         render: { visible: false }
     }
 });
-
 Composite.add(world, mouseConstraint);
-// Keep the mouse in sync with rendering
 render.mouse = mouse;
 
 // 5. Summon Logic
 const summonBtn = document.getElementById('summonBtn');
 const deleteBtn = document.getElementById('deleteBtn');
-let pizzas = [];
+const foodSelector = document.getElementById('foodSelector');
+let items = [];
 
 summonBtn.addEventListener('click', () => {
-    pizzaSound.currentTime = 0;
-    pizzaSound.play().catch(() => {});
+    const selectedFood = foodSelector.value;
+    
+    // Choose and play the correct sound
+    if (selectedFood === "🍕") {
+        pizzaSound.currentTime = 0;
+        pizzaSound.play().catch(() => {});
+    } else if (selectedFood === "🍔") {
+        burgerSound.currentTime = 0;
+        burgerSound.play().catch(() => {});
+    }
 
-    const size = 60;
-    const x = Math.random() * window.innerWidth;
+    const size = 65;
+    const x = Math.random() * (window.innerWidth - size) + size / 2;
     const y = -size;
 
-    const pizza = Bodies.circle(x, y, size / 2, {
-        restitution: 0.6,
+    const foodItem = Bodies.circle(x, y, size / 2, {
+        restitution: 0.5,
         friction: 0.1,
         render: {
             sprite: {
-                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 100 100"><text y="80" font-size="80">🍕</text></svg>`,
+                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
                 xScale: 1,
                 yScale: 1
             }
         }
     });
 
-    pizzas.push(pizza);
-    Composite.add(world, pizza);
+    items.push(foodItem);
+    Composite.add(world, foodItem);
     deleteBtn.style.display = 'block';
 });
 
 // 6. Delete Logic
 deleteBtn.addEventListener('click', () => {
-    pizzas.forEach(p => Composite.remove(world, p));
-    pizzas = [];
+    items.forEach(item => Composite.remove(world, item));
+    items = [];
     deleteBtn.style.display = 'none';
 });
 
@@ -85,56 +93,5 @@ window.addEventListener('resize', () => {
     render.canvas.height = window.innerHeight;
     Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
     Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
-});// 5. Summon Pizza Function
-function summonPizza() {
-    // Play sound effect
-    pizzaSound.currentTime = 0; 
-    pizzaSound.play().catch(err => console.log("Audio waiting for interaction"));
-
-    const size = 50;
-    const randomX = Math.random() * window.innerWidth;
-    const startY = -size;
-
-    const pizzaBody = Bodies.circle(randomX, startY, size / 2, {
-        restitution: 0.6,
-        friction: 0.1,
-        render: {
-            sprite: {
-                // Inline SVG to represent the pizza emoji
-                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 100 100"><text y="80" font-size="80">🍕</text></svg>`,
-                xScale: 1,
-                yScale: 1
-            }
-        }
-    });
-
-    pizzas.push(pizzaBody);
-    Composite.add(world, pizzaBody);
-
-    // Show delete button on first summon
-    if (pizzas.length > 0) {
-        deleteBtn.style.display = 'block';
-    }
-}
-
-// 6. Delete Pizzas Function
-function clearAllPizzas() {
-    pizzas.forEach(pizza => {
-        Composite.remove(world, pizza);
-    });
-    pizzas = [];
-    deleteBtn.style.display = 'none';
-}
-
-// 7. Event Listeners
-summonBtn.addEventListener('click', summonPizza);
-deleteBtn.addEventListener('click', clearAllPizzas);
-
-window.addEventListener('resize', () => {
-    render.canvas.width = window.innerWidth;
-    render.canvas.height = window.innerHeight;
-    
-    // Reposition boundaries on window resize
-    Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
-    Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
 });
+

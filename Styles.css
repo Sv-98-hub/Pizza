@@ -5,7 +5,7 @@ body {
     background-color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     user-select: none;
-    touch-action: none; /* Prevents scrolling while dragging pizzas */
+    touch-action: none;
 }
 
 canvas {
@@ -13,7 +13,6 @@ canvas {
     top: 0;
     left: 0;
     z-index: 5;
-    /* Removed pointer-events: none so we can touch the pizzas */
 }
 
 .ui-layer {
@@ -23,14 +22,14 @@ canvas {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 10vh;
+    padding-top: 8vh;
     min-height: 100vh;
     text-align: center;
-    pointer-events: none; /* Let clicks pass through to the canvas */
+    pointer-events: none;
 }
 
-.main-heading, .sub-heading, .btn {
-    pointer-events: auto; /* Re-enable clicks for the actual buttons */
+.main-heading, .sub-heading, .controls-container {
+    pointer-events: auto;
 }
 
 .main-heading {
@@ -44,7 +43,26 @@ canvas {
 .sub-heading {
     font-size: 0.9rem;
     color: #4b5563;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.controls-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Dropdown Styling */
+.food-select {
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    border: 2px solid #ff9800;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    outline: none;
+    color: #333;
 }
 
 .btn {
@@ -63,11 +81,10 @@ canvas {
 .btn-summon {
     background-color: #ff9800;
     color: white;
-    padding: 15px 30px;
+    padding: 15px 40px;
     border-radius: 8px;
     font-weight: bold;
     font-size: 1.2rem;
-    margin-bottom: 15px;
 }
 
 .btn-delete {
@@ -77,53 +94,4 @@ canvas {
     border-radius: 8px;
     font-size: 1rem;
     display: none;
-}
-
-}
-
-.sub-heading {
-    font-size: 1rem;
-    color: #4b5563;
-    margin-bottom: 2rem;
-}
-
-.btn {
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
-    outline: none;
-    font-family: inherit;
-}
-
-.btn:active {
-    transform: scale(0.95);
-}
-
-.btn-summon {
-    background-color: #ff9800;
-    color: white;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.btn-summon:hover {
-    background-color: #e68a00;
-}
-
-.btn-delete {
-    background-color: #f44336;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 1rem;
-    display: none; /* Hidden until first pizza */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.btn-delete:hover {
-    background-color: #d32f2f;
 }

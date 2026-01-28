@@ -31,10 +31,109 @@ let leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHei
 let rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
 Composite.add(world, [ground, leftWall, rightWall]);
 
-// 4. Mode Selection State
-let currentMode = 'drag'; // 'drag' or 'eat'
-const dragModeBtn = document.getElementById('dragModeBtn');
-const eatModeBtn = document.getElementById('eatModeBtn');
+// 4. Mode & Food Elements
+const modeSelector = document.getElementById('modeSelector');
+const foodSelector = document.getElementById('foodSelector');
+const summonBtn = document.getElementById('summonBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+
+let currentMode = 'drag';
+let items = [];
+
+// Handle Mode Change from Dropdown
+modeSelector.addEventListener('change', (e) => {
+    currentMode = e.target.value;
+    if (currentMode === 'drag') {
+        mouseConstraint.collisionFilter.mask = 0xFFFFFFFF; // Enable grabbing
+    } else {
+        mouseConstraint.collisionFilter.mask = 0x00000000; // Disable grabbing for eating
+    }
+});
+
+// 5. Mouse Interaction
+const mouse = Mouse.create(render.canvas);
+const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.08, 
+        render: { visible: false }
+    }
+});
+Composite.add(world, mouseConstraint);
+render.mouse = mouse;
+
+// 6. Summon Logic
+summonBtn.addEventListener('click', () => {
+    const selectedFood = foodSelector.value;
+    
+    // Play correct summon sound
+    if (selectedFood === "🍕") {
+        pizzaSound.currentTime = 0;
+        pizzaSound.play().catch(() => {});
+    } else if (selectedFood === "🍔") {
+        burgerSound.currentTime = 0;
+        burgerSound.play().catch(() => {});
+    } else if (selectedFood === "🌮") {
+        tacoSound.currentTime = 0;
+        tacoSound.play().catch(() => {});
+    }
+
+    const size = 65;
+    const x = Math.random() * (window.innerWidth - size) + size / 2;
+    const y = -size;
+
+    const foodItem = Bodies.circle(x, y, size / 2, {
+        restitution: 0.4,
+        friction: 0.2,
+        frictionAir: 0.04,
+        render: {
+            sprite: {
+                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
+                xScale: 1,
+                yScale: 1
+            }
+        }
+    });
+
+    items.push(foodItem);
+    Composite.add(world, foodItem);
+    deleteBtn.style.display = 'block';
+});
+
+// 7. Eat Mechanic (Click/Tap on canvas)
+render.canvas.addEventListener('mousedown', () => {
+    if (currentMode === 'eat') {
+        const tappedBodies = Query.point(items, mouse.position);
+        if (tappedBodies.length > 0) {
+            const target = tappedBodies[0];
+            
+            eatSound.currentTime = 0;
+            eatSound.play().catch(() => {});
+            
+            Composite.remove(world, target);
+            items = items.filter(item => item !== target);
+            
+            if (items.length === 0) {
+                deleteBtn.style.display = 'none';
+            }
+        }
+    }
+});
+
+// 8. Clear All
+deleteBtn.addEventListener('click', () => {
+    items.forEach(item => Composite.remove(world, item));
+    items = [];
+    deleteBtn.style.display = 'none';
+});
+
+// 9. Resize Handling
+window.addEventListener('resize', () => {
+    render.canvas.width = window.innerWidth;
+    render.canvas.height = window.innerHeight;
+    Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
+    Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
+});const eatModeBtn = document.getElementById('eatModeBtn');
 
 function setMode(mode) {
     currentMode = mode;

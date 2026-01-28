@@ -1,9 +1,11 @@
 // 1. Audio Setup
 const pizzaSound = new Audio('pizza.mp3');
 const burgerSound = new Audio('chezburger.mp3');
+const tacoSound = new Audio('taco.mp3');
+const eatSound = new Audio('eating.mp3');
 
 // 2. Matter.js Setup
-const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse } = Matter;
+const { Engine, Render, Runner, Bodies, Composite, MouseConstraint, Mouse, Query } = Matter;
 
 const engine = Engine.create();
 const world = engine.world;
@@ -29,12 +31,12 @@ let leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHei
 let rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
 Composite.add(world, [ground, leftWall, rightWall]);
 
-// 4. Mouse Control (Touch/Drag)
+// 4. Mouse Control (Lower stiffness to prevent crazy flinging)
 const mouse = Mouse.create(render.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
     constraint: {
-        stiffness: 0.2,
+        stiffness: 0.05, // Much lower stiffness for smoother dragging
         render: { visible: false }
     }
 });
@@ -50,13 +52,15 @@ let items = [];
 summonBtn.addEventListener('click', () => {
     const selectedFood = foodSelector.value;
     
-    // Choose and play the correct sound
     if (selectedFood === "🍕") {
         pizzaSound.currentTime = 0;
         pizzaSound.play().catch(() => {});
     } else if (selectedFood === "🍔") {
         burgerSound.currentTime = 0;
         burgerSound.play().catch(() => {});
+    } else if (selectedFood === "🌮") {
+        tacoSound.currentTime = 0;
+        tacoSound.play().catch(() => {});
     }
 
     const size = 65;
@@ -64,8 +68,9 @@ summonBtn.addEventListener('click', () => {
     const y = -size;
 
     const foodItem = Bodies.circle(x, y, size / 2, {
-        restitution: 0.5,
-        friction: 0.1,
+        restitution: 0.4,
+        friction: 0.2,
+        frictionAir: 0.02, // Added air friction so it doesn't fly away too fast
         render: {
             sprite: {
                 texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
@@ -80,18 +85,43 @@ summonBtn.addEventListener('click', () => {
     deleteBtn.style.display = 'block';
 });
 
-// 6. Delete Logic
+// 6. Eat Mechanic (Click/Tap to Eat)
+// We detect a click that isn't a drag
+let lastClickTime = 0;
+render.canvas.addEventListener('mousedown', (event) => {
+    const mousePosition = mouse.position;
+    // Find if we clicked on any food items
+    const bodies = items;
+    const clickedBodies = Query.point(bodies, mousePosition);
+
+    if (clickedBodies.length > 0) {
+        const target = clickedBodies[0];
+        
+        // Eat the item
+        eatSound.currentTime = 0;
+        eatSound.play().catch(() => {});
+        
+        // Remove from world and array
+        Composite.remove(world, target);
+        items = items.filter(item => item !== target);
+        
+        if (items.length === 0) {
+            deleteBtn.style.display = 'none';
+        }
+    }
+});
+
+// 7. Delete Logic
 deleteBtn.addEventListener('click', () => {
     items.forEach(item => Composite.remove(world, item));
     items = [];
     deleteBtn.style.display = 'none';
 });
 
-// 7. Handle Resize
+// 8. Handle Resize
 window.addEventListener('resize', () => {
     render.canvas.width = window.innerWidth;
     render.canvas.height = window.innerHeight;
     Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
     Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
 });
-

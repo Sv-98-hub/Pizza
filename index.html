@@ -19,21 +19,38 @@
         </p>
 
         <div class="controls-container">
-            <!-- Mode Switcher -->
-            <div class="mode-container">
-                <button id="dragModeBtn" class="mode-btn active">🖐️ Drag Mode</button>
-                <button id="eatModeBtn" class="mode-btn">😋 Eat Mode</button>
+            <!-- Top Bar: Mode Dropdown on the right -->
+            <div class="action-bar">
+                <div class="dropdown-group">
+                    <label class="dropdown-label">Mode:</label>
+                    <select id="modeSelector" class="custom-select">
+                        <option value="drag">🖐️ Drag</option>
+                        <option value="eat">😋 Eat</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="dropdown">
-                <select id="foodSelector" class="food-select">
-                    <option value="🍕">Pizza 🍕</option>
-                    <option value="🍔">Chezburger 🍔</option>
-                    <option value="🌮">Taco 🌮</option>
-                </select>
+            <!-- Bottom Bar: Summon and Food Dropdown -->
+            <div class="action-bar">
+                <button id="summonBtn" class="btn btn-summon">Summon</button>
+                
+                <div class="dropdown-group">
+                    <select id="foodSelector" class="custom-select food-only">
+                        <option value="🍕">🍕</option>
+                        <option value="🍔">🍔</option>
+                        <option value="🌮">🌮</option>
+                    </select>
+                </div>
             </div>
             
-            <button id="summonBtn" class="btn btn-summon">summon food?</button>
+            <button id="deleteBtn" class="btn btn-delete">Clear All</button>
+        </div>
+    </div>
+
+    <script src="Logic.js"></script>
+</body>
+</html>
+
             <button id="deleteBtn" class="btn btn-delete">delete items</button>
         </div>
     </div>

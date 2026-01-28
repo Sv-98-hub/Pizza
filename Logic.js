@@ -36,6 +36,112 @@ const mouse = Mouse.create(render.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
     constraint: {
+        stiffness: 0.1, 
+        render: { visible: false }
+    }
+});
+Composite.add(world, mouseConstraint);
+render.mouse = mouse;
+
+// 5. Summon Logic
+const summonBtn = document.getElementById('summonBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+const foodSelector = document.getElementById('foodSelector');
+let items = [];
+
+summonBtn.addEventListener('click', () => {
+    const selectedFood = foodSelector.value;
+    
+    // Play appropriate sound
+    if (selectedFood === "🍕") {
+        pizzaSound.currentTime = 0;
+        pizzaSound.play().catch(() => {});
+    } else if (selectedFood === "🍔") {
+        burgerSound.currentTime = 0;
+        burgerSound.play().catch(() => {});
+    } else if (selectedFood === "🌮") {
+        tacoSound.currentTime = 0;
+        tacoSound.play().catch(() => {});
+    }
+
+    const size = 65;
+    const x = Math.random() * (window.innerWidth - size) + size / 2;
+    const y = -size;
+
+    const foodItem = Bodies.circle(x, y, size / 2, {
+        restitution: 0.4,
+        friction: 0.2,
+        frictionAir: 0.04, // Heavier feel
+        render: {
+            sprite: {
+                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
+                xScale: 1,
+                yScale: 1
+            }
+        }
+    });
+
+    items.push(foodItem);
+    Composite.add(world, foodItem);
+    deleteBtn.style.display = 'block';
+});
+
+// 6. TAP TO DELETE (EAT) MECHANIC
+let mousedownPos = { x: 0, y: 0 };
+
+// Capture where the click started
+render.canvas.addEventListener('mousedown', () => {
+    mousedownPos = { x: mouse.position.x, y: mouse.position.y };
+});
+
+// Check on mouseup if it was a tap or a drag
+render.canvas.addEventListener('mouseup', () => {
+    const mouseupPos = mouse.position;
+    
+    // Calculate distance between press and release
+    const dist = Math.sqrt(
+        Math.pow(mouseupPos.x - mousedownPos.x, 2) + 
+        Math.pow(mouseupPos.y - mousedownPos.y, 2)
+    );
+
+    // If moved less than 10 pixels, consider it a "Tap" to eat
+    if (dist < 10) {
+        const tappedBodies = Query.point(items, mouseupPos);
+        
+        if (tappedBodies.length > 0) {
+            const target = tappedBodies[0];
+            
+            // Play Eating Sound
+            eatSound.currentTime = 0;
+            eatSound.play().catch(() => {});
+            
+            // DELETE ITSELF
+            Composite.remove(world, target);
+            items = items.filter(item => item !== target);
+            
+            // Hide delete button if screen is empty
+            if (items.length === 0) {
+                deleteBtn.style.display = 'none';
+            }
+        }
+    }
+});
+
+// 7. Delete All Logic
+deleteBtn.addEventListener('click', () => {
+    items.forEach(item => Composite.remove(world, item));
+    items = [];
+    deleteBtn.style.display = 'none';
+});
+
+// 8. Handle Resize
+window.addEventListener('resize', () => {
+    render.canvas.width = window.innerWidth;
+    render.canvas.height = window.innerHeight;
+    Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
+    Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
+});    mouse: mouse,
+    constraint: {
         stiffness: 0.1, // Smooth dragging
         render: { visible: false }
     }

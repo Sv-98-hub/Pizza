@@ -31,19 +31,42 @@ let leftWall = Bodies.rectangle(-25, window.innerHeight / 2, 50, window.innerHei
 let rightWall = Bodies.rectangle(window.innerWidth + 25, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true });
 Composite.add(world, [ground, leftWall, rightWall]);
 
-// 4. Mouse Control (Physics Dragging)
+// 4. Mode Selection State
+let currentMode = 'drag'; // 'drag' or 'eat'
+const dragModeBtn = document.getElementById('dragModeBtn');
+const eatModeBtn = document.getElementById('eatModeBtn');
+
+function setMode(mode) {
+    currentMode = mode;
+    if (mode === 'drag') {
+        dragModeBtn.classList.add('active');
+        eatModeBtn.classList.remove('active');
+        // Enable physics grabbing
+        mouseConstraint.collisionFilter.mask = 0xFFFFFFFF;
+    } else {
+        eatModeBtn.classList.add('active');
+        dragModeBtn.classList.remove('active');
+        // Disable physics grabbing so we don't drag while eating
+        mouseConstraint.collisionFilter.mask = 0x00000000;
+    }
+}
+
+dragModeBtn.addEventListener('click', () => setMode('drag'));
+eatModeBtn.addEventListener('click', () => setMode('eat'));
+
+// 5. Mouse Control (Physics Dragging)
 const mouse = Mouse.create(render.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
     constraint: {
-        stiffness: 0.1, 
+        stiffness: 0.08, 
         render: { visible: false }
     }
 });
 Composite.add(world, mouseConstraint);
 render.mouse = mouse;
 
-// 5. Summon Logic
+// 6. Summon Logic
 const summonBtn = document.getElementById('summonBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const foodSelector = document.getElementById('foodSelector');
@@ -52,7 +75,7 @@ let items = [];
 summonBtn.addEventListener('click', () => {
     const selectedFood = foodSelector.value;
     
-    // Play appropriate sound
+    // Choose sound
     if (selectedFood === "🍕") {
         pizzaSound.currentTime = 0;
         pizzaSound.play().catch(() => {});
@@ -71,7 +94,7 @@ summonBtn.addEventListener('click', () => {
     const foodItem = Bodies.circle(x, y, size / 2, {
         restitution: 0.4,
         friction: 0.2,
-        frictionAir: 0.04, // Heavier feel
+        frictionAir: 0.03,
         render: {
             sprite: {
                 texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
@@ -86,137 +109,16 @@ summonBtn.addEventListener('click', () => {
     deleteBtn.style.display = 'block';
 });
 
-// 6. TAP TO DELETE (EAT) MECHANIC
-let mousedownPos = { x: 0, y: 0 };
-
-// Capture where the click started
+// 7. EAT LOGIC (Active only in Eat Mode)
 render.canvas.addEventListener('mousedown', () => {
-    mousedownPos = { x: mouse.position.x, y: mouse.position.y };
-});
-
-// Check on mouseup if it was a tap or a drag
-render.canvas.addEventListener('mouseup', () => {
-    const mouseupPos = mouse.position;
-    
-    // Calculate distance between press and release
-    const dist = Math.sqrt(
-        Math.pow(mouseupPos.x - mousedownPos.x, 2) + 
-        Math.pow(mouseupPos.y - mousedownPos.y, 2)
-    );
-
-    // If moved less than 10 pixels, consider it a "Tap" to eat
-    if (dist < 10) {
-        const tappedBodies = Query.point(items, mouseupPos);
-        
+    if (currentMode === 'eat') {
+        const tappedBodies = Query.point(items, mouse.position);
         if (tappedBodies.length > 0) {
             const target = tappedBodies[0];
             
-            // Play Eating Sound
             eatSound.currentTime = 0;
             eatSound.play().catch(() => {});
             
-            // DELETE ITSELF
-            Composite.remove(world, target);
-            items = items.filter(item => item !== target);
-            
-            // Hide delete button if screen is empty
-            if (items.length === 0) {
-                deleteBtn.style.display = 'none';
-            }
-        }
-    }
-});
-
-// 7. Delete All Logic
-deleteBtn.addEventListener('click', () => {
-    items.forEach(item => Composite.remove(world, item));
-    items = [];
-    deleteBtn.style.display = 'none';
-});
-
-// 8. Handle Resize
-window.addEventListener('resize', () => {
-    render.canvas.width = window.innerWidth;
-    render.canvas.height = window.innerHeight;
-    Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
-    Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
-});    mouse: mouse,
-    constraint: {
-        stiffness: 0.1, // Smooth dragging
-        render: { visible: false }
-    }
-});
-Composite.add(world, mouseConstraint);
-render.mouse = mouse;
-
-// 5. Summon Logic
-const summonBtn = document.getElementById('summonBtn');
-const deleteBtn = document.getElementById('deleteBtn');
-const foodSelector = document.getElementById('foodSelector');
-let items = [];
-
-summonBtn.addEventListener('click', () => {
-    const selectedFood = foodSelector.value;
-    
-    // Fixed Sound Logic: Explicitly check emoji value
-    if (selectedFood === "🍕") {
-        pizzaSound.currentTime = 0;
-        pizzaSound.play().catch(e => console.log("Sound error:", e));
-    } else if (selectedFood === "🍔") {
-        burgerSound.currentTime = 0;
-        burgerSound.play().catch(e => console.log("Sound error:", e));
-    } else if (selectedFood === "🌮") {
-        tacoSound.currentTime = 0;
-        tacoSound.play().catch(e => console.log("Sound error:", e));
-    }
-
-    const size = 65;
-    const x = Math.random() * (window.innerWidth - size) + size / 2;
-    const y = -size;
-
-    const foodItem = Bodies.circle(x, y, size / 2, {
-        restitution: 0.4,
-        friction: 0.2,
-        frictionAir: 0.03, // Prevent items from flinging too fast
-        label: 'food',
-        render: {
-            sprite: {
-                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
-                xScale: 1,
-                yScale: 1
-            }
-        }
-    });
-
-    items.push(foodItem);
-    Composite.add(world, foodItem);
-    deleteBtn.style.display = 'block';
-});
-
-// 6. IMPROVED EAT MECHANIC
-// We listen for the 'mousedown' (start click) and 'mouseup' (end click) 
-// to see if you just clicked without moving the mouse too much.
-let startPos = { x: 0, y: 0 };
-
-render.canvas.addEventListener('mousedown', () => {
-    startPos = { x: mouse.position.x, y: mouse.position.y };
-});
-
-render.canvas.addEventListener('mouseup', () => {
-    const endPos = mouse.position;
-    const dist = Math.sqrt(Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2));
-
-    // If the movement was small (less than 10 pixels), it's a tap/click, not a drag!
-    if (dist < 10) {
-        const clickedBodies = Query.point(items, endPos);
-        if (clickedBodies.length > 0) {
-            const target = clickedBodies[0];
-            
-            // Play Eat Sound
-            eatSound.currentTime = 0;
-            eatSound.play().catch(() => {});
-            
-            // Remove from physics and internal list
             Composite.remove(world, target);
             items = items.filter(item => item !== target);
             
@@ -227,80 +129,20 @@ render.canvas.addEventListener('mouseup', () => {
     }
 });
 
-// 7. Delete All Logic
+// 8. Delete All Logic
 deleteBtn.addEventListener('click', () => {
     items.forEach(item => Composite.remove(world, item));
     items = [];
     deleteBtn.style.display = 'none';
 });
 
-// 8. Handle Resize
+// 9. Handle Resize
 window.addEventListener('resize', () => {
     render.canvas.width = window.innerWidth;
     render.canvas.height = window.innerHeight;
     Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 25 });
     Matter.Body.setPosition(rightWall, { x: window.innerWidth + 25, y: window.innerHeight / 2 });
-});    mouse: mouse,
-    constraint: {
-        stiffness: 0.05, // Much lower stiffness for smoother dragging
-        render: { visible: false }
-    }
-});
-Composite.add(world, mouseConstraint);
-render.mouse = mouse;
-
-// 5. Summon Logic
-const summonBtn = document.getElementById('summonBtn');
-const deleteBtn = document.getElementById('deleteBtn');
-const foodSelector = document.getElementById('foodSelector');
-let items = [];
-
-summonBtn.addEventListener('click', () => {
-    const selectedFood = foodSelector.value;
-    
-    if (selectedFood === "🍕") {
-        pizzaSound.currentTime = 0;
-        pizzaSound.play().catch(() => {});
-    } else if (selectedFood === "🍔") {
-        burgerSound.currentTime = 0;
-        burgerSound.play().catch(() => {});
-    } else if (selectedFood === "🌮") {
-        tacoSound.currentTime = 0;
-        tacoSound.play().catch(() => {});
-    }
-
-    const size = 65;
-    const x = Math.random() * (window.innerWidth - size) + size / 2;
-    const y = -size;
-
-    const foodItem = Bodies.circle(x, y, size / 2, {
-        restitution: 0.4,
-        friction: 0.2,
-        frictionAir: 0.02, // Added air friction so it doesn't fly away too fast
-        render: {
-            sprite: {
-                texture: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100"><text y="75" x="5" font-size="75">${selectedFood}</text></svg>`,
-                xScale: 1,
-                yScale: 1
-            }
-        }
-    });
-
-    items.push(foodItem);
-    Composite.add(world, foodItem);
-    deleteBtn.style.display = 'block';
-});
-
-// 6. Eat Mechanic (Click/Tap to Eat)
-// We detect a click that isn't a drag
-let lastClickTime = 0;
-render.canvas.addEventListener('mousedown', (event) => {
-    const mousePosition = mouse.position;
-    // Find if we clicked on any food items
-    const bodies = items;
-    const clickedBodies = Query.point(bodies, mousePosition);
-
-    if (clickedBodies.length > 0) {
+}); 0) {
         const target = clickedBodies[0];
         
         // Eat the item
